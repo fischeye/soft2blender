@@ -15,11 +15,15 @@ except:
 # This is the Name of the Directory where the Map is stored.
 # Must be set to correct.
 
+saveGameInScriptDir = True
 singlePlayer = True
+saveGame = True
 #saveGameID = "0480919152" MULTI
 saveGameID = "2066773530"
 saveGameID = "1537019340"
 saveGameID = "123456789"
+saveGameID = "1728018653"
+saveGameID = "0472284868"
 
 
 class SonOfTheForestToBlender:
@@ -37,15 +41,17 @@ class SonOfTheForestToBlender:
 
 
     # Initially call this Method to Load the Map Data from File
-    def loadMap(self, singlePlayerMode, saveGameID):
+    def loadMap(self, singlePlayerMode, saveGameID, isSaveGameHere=False):
+        # If the SaveGame Path is in this Script Directory
+        self.isSaveGameHere = isSaveGameHere
         # Search for the Save Game Path
-        pathMultiplayerSaveGame = self.__getSaveGamePath(singlePlayerMode)
-        if pathMultiplayerSaveGame == None:
+        pathSaveGame = self.__getSaveGamePath(singlePlayerMode)
+        if pathSaveGame == None:
             print("Savegame Path not found. Exit!")
             return False
 
         # Search for the Save Game Multiplayer Map
-        mapData = self.__readSaveFile(pathMultiplayerSaveGame, saveGameID)
+        mapData = self.__readSaveFile(pathSaveGame, saveGameID)
         if mapData == None:
             print("Savegame ID not found. Exit!")
             return False
@@ -61,7 +67,7 @@ class SonOfTheForestToBlender:
         self.mapData = mapData
         self.mapStructures = mapStructures
         self.saveGameID = saveGameID
-        self.saveGamePath = pathMultiplayerSaveGame
+        self.saveGamePath = pathSaveGame
         # everythings loaded fine
         self.mapLoaded = True
         return True
@@ -115,18 +121,28 @@ class SonOfTheForestToBlender:
 
     def __getSaveGamePath(self, singlePlayer):
         result = None
-        softDir = os.path.join(os.environ['userprofile'], "AppData", "LocalLow", "Endnight", "SonsOfTheForest", "Saves")
-        if os.path.exists(softDir):
-            softDirContent =  os.listdir(softDir)
-            if (len(softDirContent) > 0):
-                # Pick the first Directory. I guess there is usually only one Directory
-                clientID = os.listdir(softDir)[0]
-                if singlePlayer:
-                    saveGameDir = os.path.join(softDir, clientID, "SinglePlayer")
-                else:
-                    saveGameDir = os.path.join(softDir, clientID, "Multiplayer")
-                if os.path.exists(saveGameDir):
-                    result = saveGameDir
+        if self.isSaveGameHere:
+            # if the SaveGame is in the Script Dir
+            thisFile = __file__
+            if self.blenderLoaded:
+                thisFile = bpy.data.filepath
+            scriptDir = os.path.dirname(os.path.realpath(thisFile))
+            if os.path.exists(scriptDir):
+                result = scriptDir
+        else:
+            # if the SaveGame is in the AppData Dir
+            softDir = os.path.join(os.environ['userprofile'], "AppData", "LocalLow", "Endnight", "SonsOfTheForest", "Saves")
+            if os.path.exists(softDir):
+                softDirContent =  os.listdir(softDir)
+                if (len(softDirContent) > 0):
+                    # Pick the first Directory. I guess there is usually only one Directory
+                    clientID = os.listdir(softDir)[0]
+                    if singlePlayer:
+                        saveGameDir = os.path.join(softDir, clientID, "SinglePlayer")
+                    else:
+                        saveGameDir = os.path.join(softDir, clientID, "Multiplayer")
+                    if os.path.exists(saveGameDir):
+                        result = saveGameDir
         return result
 
 
@@ -220,7 +236,7 @@ class SonOfTheForestToBlender:
 if __name__ == "__main__":
     SOFT = SonOfTheForestToBlender()
     # Load the Map
-    if SOFT.loadMap(singlePlayer, saveGameID):
+    if SOFT.loadMap(singlePlayer, saveGameID, saveGameInScriptDir):
         SOFT.extractStructes2JSON("structures.json")
         # Create the Map if its loaded successful
         SOFT.createMap(limitObjects=200)
