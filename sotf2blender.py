@@ -15,15 +15,19 @@ except:
 # This is the Name of the Directory where the Map is stored.
 # Must be set to correct.
 
-saveGameInScriptDir = True
-singlePlayer = True
-saveGame = True
-#saveGameID = "0480919152" MULTI
 saveGameID = "2066773530"
 saveGameID = "1537019340"
 saveGameID = "123456789"
 saveGameID = "1728018653"
 saveGameID = "0472284868"
+
+SOFTSettings = {
+    "useSaveGameInScriptDir": False,
+    "useSaveGameAbsolutePath": True,
+    "saveGameAbsolutePath": "G:\Daten\Projects\soft2blender",
+    "singlePlayer": True,
+    "saveGameID": saveGameID
+}
 
 
 class SonOfTheForestToBlender:
@@ -41,11 +45,14 @@ class SonOfTheForestToBlender:
 
 
     # Initially call this Method to Load the Map Data from File
-    def loadMap(self, singlePlayerMode, saveGameID, isSaveGameHere=False):
-        # If the SaveGame Path is in this Script Directory
-        self.isSaveGameHere = isSaveGameHere
+    def loadMap(self, settings):
+        self.singlePlayerMode = settings["singlePlayer"]
+        self.useSaveGameInScriptDir = settings["useSaveGameInScriptDir"]
+        self.useSaveGameAbsolutePath = settings["useSaveGameAbsolutePath"]
+        self.saveGameAbsolutePath = settings["saveGameAbsolutePath"]
+        self.saveGameID = settings["saveGameID"]
         # Search for the Save Game Path
-        pathSaveGame = self.__getSaveGamePath(singlePlayerMode)
+        pathSaveGame = self.__getSaveGamePath()
         if pathSaveGame == None:
             print("Savegame Path not found. Exit!")
             return False
@@ -61,12 +68,9 @@ class SonOfTheForestToBlender:
             print("No Data found in Savegame. Exit!")
             return False
         
-        
         # store some data in class variables for later use
-        self.singlePlayerMode = singlePlayerMode
         self.mapData = mapData
         self.mapStructures = mapStructures
-        self.saveGameID = saveGameID
         self.saveGamePath = pathSaveGame
         # everythings loaded fine
         self.mapLoaded = True
@@ -119,9 +123,9 @@ class SonOfTheForestToBlender:
     # ------------------------------------------------------------------------------
     # Private Methods
 
-    def __getSaveGamePath(self, singlePlayer):
+    def __getSaveGamePath(self):
         result = None
-        if self.isSaveGameHere:
+        if self.useSaveGameInScriptDir:
             # if the SaveGame is in the Script Dir
             thisFile = __file__
             if self.blenderLoaded:
@@ -129,6 +133,9 @@ class SonOfTheForestToBlender:
             scriptDir = os.path.dirname(os.path.realpath(thisFile))
             if os.path.exists(scriptDir):
                 result = scriptDir
+        elif self.useSaveGameAbsolutePath:
+            if os.path.exists(self.saveGameAbsolutePath):
+                result = self.saveGameAbsolutePath
         else:
             # if the SaveGame is in the AppData Dir
             softDir = os.path.join(os.environ['userprofile'], "AppData", "LocalLow", "Endnight", "SonsOfTheForest", "Saves")
@@ -137,7 +144,7 @@ class SonOfTheForestToBlender:
                 if (len(softDirContent) > 0):
                     # Pick the first Directory. I guess there is usually only one Directory
                     clientID = os.listdir(softDir)[0]
-                    if singlePlayer:
+                    if self.singlePlayerMode:
                         saveGameDir = os.path.join(softDir, clientID, "SinglePlayer")
                     else:
                         saveGameDir = os.path.join(softDir, clientID, "Multiplayer")
@@ -163,28 +170,52 @@ class SonOfTheForestToBlender:
 
     def __getPosition(self, data):
         result = {'x': 0, 'y': 0, 'z': 0}
-        if "Position" in data:
-            x = data["Position"]["x"]
-            y = data["Position"]["y"]
-            z = data["Position"]["z"]
-            # Scale Location down by factor 10 and cut precision {number.xx}
-            result['x'] = float("{:.2f}".format(x / 10))
-            result['y'] = float("{:.2f}".format(y / 10))
-            result['z'] = float("{:.2f}".format(z / 10))
+        useElement = True
+        if not useElement:
+            if "Position" in data:
+                x = data["Position"]["x"]
+                y = data["Position"]["y"]
+                z = data["Position"]["z"]
+                # Scale Location down by factor 10 and cut precision {number.xx}
+                result['x'] = float("{:.2f}".format(x / 10))
+                result['y'] = float("{:.2f}".format(y / 10))
+                result['z'] = float("{:.2f}".format(z / 10))
+        else:
+            if "Elements" in data:
+                if len(data["Elements"]) > 0:
+                    if "x" in data["Elements"][0]["Position"]:
+                        result['x'] = data["Elements"][0]["Position"]["x"]
+                    if "y" in data["Elements"][0]["Position"]:
+                        result['y'] = data["Elements"][0]["Position"]["y"]
+                    if "z" in data["Elements"][0]["Position"]:
+                        result['z'] = data["Elements"][0]["Position"]["z"]
         return result
 
 
     def __getRotation(self, data):
         result = {'x': 0, 'y': 0, 'z': 0, 'w': 0.0}
-        if "Rotation" in data:
-            if "x" in data["Rotation"]:
-                result['x'] = data["Rotation"]["x"]
-            if "y" in data["Rotation"]:
-                result['y'] = data["Rotation"]["y"]
-            if "z" in data["Rotation"]:
-                result['z'] = data["Rotation"]["z"]
-            if "w" in data["Rotation"]:
-                result['w'] = data["Rotation"]["w"]
+        useElement = True
+        if not useElement:
+            if "Rotation" in data:
+                if "x" in data["Rotation"]:
+                    result['x'] = data["Rotation"]["x"]
+                if "y" in data["Rotation"]:
+                    result['y'] = data["Rotation"]["y"]
+                if "z" in data["Rotation"]:
+                    result['z'] = data["Rotation"]["z"]
+                if "w" in data["Rotation"]:
+                    result['w'] = data["Rotation"]["w"]
+        else:
+            if "Elements" in data:
+                if len(data["Elements"]) > 0:
+                    if "x" in data["Elements"][0]["Rotation"]:
+                        result['x'] = data["Elements"][0]["Rotation"]["x"]
+                    if "y" in data["Elements"][0]["Rotation"]:
+                        result['y'] = data["Elements"][0]["Rotation"]["y"]
+                    if "z" in data["Elements"][0]["Rotation"]:
+                        result['z'] = data["Elements"][0]["Rotation"]["z"]
+                    if "w" in data["Elements"][0]["Rotation"]:
+                        result['w'] = data["Elements"][0]["Rotation"]["w"]
         return result
 
 
@@ -202,7 +233,11 @@ class SonOfTheForestToBlender:
             # switch to EDIT Mode
             bpy.ops.object.mode_set(mode='EDIT')
             # apply new Size (length x,y,z)
-            bpy.ops.transform.resize(value=(0.125, 0.125, 0.125))
+            if profileID == 66:
+                # Wood Log
+                bpy.ops.transform.resize(value=(0.25, 1.1, 0.25))
+            else:
+                bpy.ops.transform.resize(value=(0.125, 0.125, 0.125))
             bpy.context.object.scale = (1, 1, 1)
             # apply Rotation. Flip also Y with Z
             #curObject.rotation_euler[0] = itemRot['x']
@@ -236,7 +271,7 @@ class SonOfTheForestToBlender:
 if __name__ == "__main__":
     SOFT = SonOfTheForestToBlender()
     # Load the Map
-    if SOFT.loadMap(singlePlayer, saveGameID, saveGameInScriptDir):
+    if SOFT.loadMap(SOFTSettings):
         SOFT.extractStructes2JSON("structures.json")
         # Create the Map if its loaded successful
         SOFT.createMap(limitObjects=200)
