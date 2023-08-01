@@ -15,10 +15,10 @@ except:
 # This is the Name of the Directory where the Map is stored.
 # Must be set to correct.
 
-saveGameID = "2066773530"
-saveGameID = "1537019340"
-saveGameID = "123456789"
-saveGameID = "1728018653"
+#saveGameID = "2066773530"
+#saveGameID = "1537019340"
+#saveGameID = "123456789"
+#saveGameID = "1728018653"
 saveGameID = "0472284868"
 
 SOFTSettings = {
@@ -56,6 +56,8 @@ class SonOfTheForestToBlender:
         if pathSaveGame == None:
             print("Savegame Path not found. Exit!")
             return False
+        else:
+            print("Found Savegame Path:", pathSaveGame)
 
         # Search for the Save Game Multiplayer Map
         mapData = self.__readSaveFile(pathSaveGame, saveGameID)
@@ -67,6 +69,8 @@ class SonOfTheForestToBlender:
         if mapStructures == None:
             print("No Data found in Savegame. Exit!")
             return False
+        else:
+            print(mapStructures)
         
         # store some data in class variables for later use
         self.mapData = mapData
@@ -90,13 +94,19 @@ class SonOfTheForestToBlender:
         if self.mapLoaded:
             # Create a Blender Collection to create Objects in there
             self.__blenderCreateCollection()
+            # Create all Materials
+            self.__blenderCreateMaterials()
             # iterate through all structures
             createdItems = 0
             unusedItems = 0
             leaveLoop = False
+            index = -1
             for itemList in self.mapStructures:
+                index += 1
+                subindex = -1
                 if (itemList is not None and len(itemList) > 0):
                     for item in itemList:
+                        subindex += 1
                         itemPos = self.__getPosition(item)
                         itemRot = self.__getRotation(item)
                         typeID = item["TypeID"]
@@ -106,7 +116,7 @@ class SonOfTheForestToBlender:
                             break
                         profileID = item['Elements'][0]['ProfileID']
                         print("Type {} - Profile {} - Pos: {:.2f},{:.2f},{:.2f}".format(typeID, profileID, itemPos['x'], itemPos['y'], itemPos['z']))
-                        self.__blenderCreateObject(itemPos, itemRot, typeID, profileID)
+                        self.__blenderCreateObject(itemPos, itemRot, typeID, profileID, index, subindex)
                         createdItems += 1
                         if limitObjects > 0:
                             if createdItems == limitObjects:
@@ -224,20 +234,22 @@ class SonOfTheForestToBlender:
 
 
     # Create Blender Object from GameData
-    def __blenderCreateObject(self, itemPos, itemRot, typeID, profileID):
+    def __blenderCreateObject(self, itemPos, itemRot, typeID, profileID, index, subindex):
         # Check if bpy Module is Loaded (if the Script run in Blender)
         if self.blenderLoaded:
             # Create the Object. Flip Y with Z Axis for Blender, cause its rotatet in the Game
-            bpy.ops.mesh.primitive_cube_add(location=(itemPos['x'], itemPos['y'], itemPos['z']))
-            curObject = bpy.context.object
-            # switch to EDIT Mode
-            bpy.ops.object.mode_set(mode='EDIT')
-            # apply new Size (length x,y,z)
-            if profileID == 66:
+            #bpy.ops.mesh.primitive_cube_add(location=(itemPos['x'], itemPos['y'], itemPos['z']))
+            if profileID == 1:
                 # Wood Log
-                bpy.ops.transform.resize(value=(0.25, 1.1, 0.25))
+                self.__blenderWoodLog()                
             else:
-                bpy.ops.transform.resize(value=(0.125, 0.125, 0.125))
+                self.__blenderUndefined()
+            curObject = bpy.context.object
+            # Move Object to his final Position
+            bpy.ops.transform.translate(value=(itemPos['x'], itemPos['y'], itemPos['z']))
+            # switch to EDIT Mode
+            
+            # apply new Size (length x,y,z)
             bpy.context.object.scale = (1, 1, 1)
             # apply Rotation. Flip also Y with Z
             #curObject.rotation_euler[0] = itemRot['x']
@@ -246,15 +258,54 @@ class SonOfTheForestToBlender:
             curObject.rotation_mode = 'QUATERNION'
             curObject.rotation_quaternion = (itemRot['w'], itemRot['x'], itemRot['y'], itemRot['z'])
             # switch back to OBJECT Mode
-            bpy.ops.object.mode_set(mode='OBJECT')
+            
             # remove Object of his Collection and put the Object into the new Collection
             for objCols in curObject.users_collection:
                 objCols.objects.unlink(curObject)
             bpy.data.collections[saveGameID].objects.link(curObject)
             # rename Object
-            bpy.context.object.name = "Item." + str(typeID) + "T." + str(profileID) + "P"
+            bpy.context.object.name = "Obj-" + str(index) + "-" + str(subindex) + ".T" + str(typeID) + ".P" + str(profileID)
+    
+    def __blenderNewMaterial(self, name):
+        # Check if bpy Module is Loaded (if the Script run in Blender)
+        if self.blenderLoaded:
+            bpy.data.materials.new(name)
+            material = bpy.data.materials.get(name)
+            material.use_nodes = True
+            return material
+    
+    
+    def __blenderCreateMaterials(self):
+        # Check if bpy Module is Loaded (if the Script run in Blender)
+        if self.blenderLoaded:
+            newMaterial = self.__blenderNewMaterial("WoodLog")
+            nodes = newMaterial.node_tree.nodes
+            nodes["Principled BSDF"].inputs[0].default_value = (0.0420278, 0.00887743, 0.00520561, 1)
+            newMaterial = self.__blenderNewMaterial("Undefined")
+            nodes = newMaterial.node_tree.nodes
+            nodes["Principled BSDF"].inputs[0].default_value = (0.634298, 0.0546605, 0.650006, 1)
+    
 
+    def __blenderWoodLog(self):
+        # Check if bpy Module is Loaded (if the Script run in Blender)
+        if self.blenderLoaded:
+            bpy.ops.mesh.primitive_cylinder_add()
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.transform.resize(value=(0.25, 0.25, 1.1))
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.context.object.data.materials.append(bpy.data.materials.get("WoodLog"))
+    
+    
+    def __blenderUndefined(self):
+        # Check if bpy Module is Loaded (if the Script run in Blender)
+        if self.blenderLoaded:
+            bpy.ops.mesh.primitive_cube_add()
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.transform.resize(value=(0.125, 0.125, 0.125))
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.context.object.data.materials.append(bpy.data.materials.get("Undefined"))
 
+    
     # Create Blender Collection with Name of SaveGameID
     def __blenderCreateCollection(self):
         # Check if bpy Module is Loaded (if the Script run in Blender)
