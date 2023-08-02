@@ -24,7 +24,7 @@ saveGameID = "0472284868"
 SOFTSettings = {
     "useSaveGameInScriptDir": False,
     "useSaveGameAbsolutePath": True,
-    "saveGameAbsolutePath": "G:\Daten\Projects\soft2blender",
+    "saveGameAbsolutePath": "C:\DATA\GIT\soft2blender",
     "singlePlayer": True,
     "saveGameID": saveGameID
 }
@@ -69,8 +69,6 @@ class SonOfTheForestToBlender:
         if mapStructures == None:
             print("No Data found in Savegame. Exit!")
             return False
-        else:
-            print(mapStructures)
         
         # store some data in class variables for later use
         self.mapData = mapData
@@ -166,6 +164,7 @@ class SonOfTheForestToBlender:
     def __readSaveFile(self, gamePath, mapID):
         result = None
         pathConstructions = os.path.join(gamePath, mapID, "ConstructionsSaveData.json")
+        print("Use JSON:", pathConstructions)
         if (os.path.exists(pathConstructions)):
             with open(pathConstructions, 'r') as f:
                 result = json.load(f)
@@ -241,7 +240,15 @@ class SonOfTheForestToBlender:
             #bpy.ops.mesh.primitive_cube_add(location=(itemPos['x'], itemPos['y'], itemPos['z']))
             if profileID == 1:
                 # Wood Log
-                self.__blenderWoodLog()                
+                self.__blenderWoodLog()
+            elif profileID == 2:
+                self.__blenderWoodLog(vertical=True)
+            elif profileID == 12:
+                self.__blenderStick()
+            elif profileID == 213:
+                self.__blenderStone()
+            elif profileID == 224:
+                self.__blenderStone()
             else:
                 self.__blenderUndefined()
             curObject = bpy.context.object
@@ -281,21 +288,52 @@ class SonOfTheForestToBlender:
             newMaterial = self.__blenderNewMaterial("WoodLog")
             nodes = newMaterial.node_tree.nodes
             nodes["Principled BSDF"].inputs[0].default_value = (0.0420278, 0.00887743, 0.00520561, 1)
+            newMaterial = self.__blenderNewMaterial("Stone")
+            nodes = newMaterial.node_tree.nodes
+            nodes["Principled BSDF"].inputs[0].default_value = (0.0420277, 0.0420277, 0.0420277, 1)
             newMaterial = self.__blenderNewMaterial("Undefined")
             nodes = newMaterial.node_tree.nodes
             nodes["Principled BSDF"].inputs[0].default_value = (0.634298, 0.0546605, 0.650006, 1)
     
 
-    def __blenderWoodLog(self):
+    def __blenderStick(self):
         # Check if bpy Module is Loaded (if the Script run in Blender)
         if self.blenderLoaded:
             bpy.ops.mesh.primitive_cylinder_add()
             bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.transform.resize(value=(0.25, 0.25, 1.1))
+            bpy.ops.transform.resize(value=(0.1, 0.1, 0.6))
+            bpy.ops.transform.rotate(value=1.5708, orient_axis='X', orient_type='LOCAL')
             bpy.ops.object.mode_set(mode='OBJECT')
             bpy.context.object.data.materials.append(bpy.data.materials.get("WoodLog"))
+
+
+    def __blenderWoodLog(self, vertical=False):
+        # Check if bpy Module is Loaded (if the Script run in Blender)
+        if self.blenderLoaded:
+            if not vertical:
+                bpy.ops.mesh.primitive_cylinder_add()
+                bpy.ops.object.mode_set(mode='EDIT')
+                bpy.ops.transform.resize(value=(0.25, 0.25, 1.1))
+                bpy.ops.object.mode_set(mode='OBJECT')
+                bpy.context.object.data.materials.append(bpy.data.materials.get("WoodLog"))
+            else:
+                bpy.ops.mesh.primitive_cylinder_add()
+                bpy.ops.object.mode_set(mode='EDIT')
+                bpy.ops.transform.resize(value=(0.25, 0.25, 1.1))
+                bpy.ops.object.mode_set(mode='OBJECT')
+                bpy.context.object.data.materials.append(bpy.data.materials.get("WoodLog"))
     
-    
+
+    def __blenderStone(self):
+        # Check if bpy Module is Loaded (if the Script run in Blender)
+        if self.blenderLoaded:
+            bpy.ops.mesh.primitive_cube_add()
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.transform.resize(value=(0.2, 0.2, 0.2))
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.context.object.data.materials.append(bpy.data.materials.get("Stone"))
+
+
     def __blenderUndefined(self):
         # Check if bpy Module is Loaded (if the Script run in Blender)
         if self.blenderLoaded:
