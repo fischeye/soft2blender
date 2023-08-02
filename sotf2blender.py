@@ -27,7 +27,7 @@ SOFTSettings = {
     # Set this True, to use a absolute path, where the SaveGameID Directory is stored.
     "useSaveGameAbsolutePath": True,
     # The absolute path in combination with useSaveGameAbsolutePath
-    "saveGameAbsolutePath": "C:\DATA\GIT\soft2blender",
+    "saveGameAbsolutePath": r"C:\DATA\GIT\soft2blender",
     # Search for the GameID in single or multiplayer. This will be ignored ith ScriptDir/AbsolutePath is used.
     "singlePlayer": True,
     # The saveGameID of the Map, which is stored in Multiplayer/Singleplayer
@@ -353,6 +353,62 @@ class SonOfTheForestToBlender:
             if not self.saveGameID in bpy.data.collections:
                 bpy.ops.collection.create(name=self.saveGameID)
                 bpy.context.scene.collection.children.link(bpy.data.collections[self.saveGameID])
+
+
+
+
+
+# ------------------------------------------------------------------------------
+# Blender Helper Class
+
+class SOFTGameReader:
+
+    def __init__(self):
+        self.mapLoaded = False
+
+    def getSaveGamePath(self, saveGameID, singlePlayer=False, customPath=None):
+        pass
+
+    def readSaveGame(self):
+        pass
+
+    def getConstructionCategories(self):
+        pass
+
+    def getConstructionCategoryByID(self):
+        pass
+
+
+
+# ------------------------------------------------------------------------------
+# Blender Helper Class
+
+class BlenderCreator:
+
+    def __init__(self, gameID):
+        self.gameID = gameID
+        self.blenderLoaded = False
+        # check if this script run in Blender and module is loaded
+        # script will run in plain python as well, without creating blender objects
+        if "bpy" in sys.modules:
+            self.blenderLoaded = True
+
+
+    def createCollection(self):
+        pass
+
+    def createMaterial(self, Name, Color):
+        pass
+
+    def createObject(self, profileID, position, rotation):
+        pass
+
+
+
+
+
+
+
 
 
 # ------------------------------------------------------------------------------
