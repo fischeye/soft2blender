@@ -22,22 +22,68 @@ except:
 saveGameID = "0472284868"
 
 SOFTSettings = {
+    # Set this True, if the SaveGameID Directory is in the same Directory as this Script. (will not work in Blender)
     "useSaveGameInScriptDir": False,
+    # Set this True, to use a absolute path, where the SaveGameID Directory is stored.
     "useSaveGameAbsolutePath": True,
+    # The absolute path in combination with useSaveGameAbsolutePath
     "saveGameAbsolutePath": "C:\DATA\GIT\soft2blender",
+    # Search for the GameID in single or multiplayer. This will be ignored ith ScriptDir/AbsolutePath is used.
     "singlePlayer": True,
+    # The saveGameID of the Map, which is stored in Multiplayer/Singleplayer
     "saveGameID": saveGameID
 }
 
-
+# Main Class
+# Used to read the GameData and create Blender Objects
 class SonOfTheForestToBlender:
     
+    # Initialization / Constructor
     def __init__(self) -> None:
         self.mapLoaded = False
         self.blenderLoaded = False
         # check if this script run in Blender and module is loaded
+        # script will run in plain python as well, without creating blender objects
         if "bpy" in sys.modules:
             self.blenderLoaded = True
+        self.gameMaterials = {
+            "WoodLog": (0.0420278, 0.00887743, 0.00520561, 1),
+            "Stone": (0.0420277, 0.0420277, 0.0420277, 1),
+            "Undefined": (0.634298, 0.0546605, 0.650006, 1)
+        }
+        self.gameObjects = {
+            0: {
+                    "type": "cube",
+                    "transform": (0.125, 0.125, 0.125),
+                    "material": "Undefinded"
+                },
+            1: {
+                    "type": "cylinder",
+                    "transform": (0.25, 0.25, 1.1),
+                    "material": "WoodLog"
+                },
+            2: {
+                    "type": "cylinder",
+                    "transform": (0.25, 0.25, 1.1),
+                    "material": "WoodLog"
+                },
+            12: {
+                    "type": "cylinder",
+                    "transform": (0.1, 0.1, 0.6),
+                    "rotate": { "value": 1.5708, "axis": "X", "type": "LOCAL" },
+                    "material": "WoodLog"
+                },
+            213: {
+                    "type": "cube",
+                    "transform": (0.2, 0.2, 0.2),
+                    "material": "Stone"
+                },
+            224: {
+                    "type": "cube",
+                    "transform": (0.2, 0.2, 0.2),
+                    "material": "Stone"
+                }
+        }
 
 
     # ------------------------------------------------------------------------------
@@ -105,15 +151,19 @@ class SonOfTheForestToBlender:
                 if (itemList is not None and len(itemList) > 0):
                     for item in itemList:
                         subindex += 1
+                        # Get the Position and Rotation from the curent Structure/Item/Object
                         itemPos = self.__getPosition(item)
                         itemRot = self.__getRotation(item)
+                        # read TypeID
                         typeID = item["TypeID"]
                         if len(item['Elements']) == 0:
                             # Item without Elements ... who know's what that is?
                             unusedItems += 1
                             break
+                        # read ProfileID
                         profileID = item['Elements'][0]['ProfileID']
                         print("Type {} - Profile {} - Pos: {:.2f},{:.2f},{:.2f}".format(typeID, profileID, itemPos['x'], itemPos['y'], itemPos['z']))
+                        # Create the Blender Object
                         self.__blenderCreateObject(itemPos, itemRot, typeID, profileID, index, subindex)
                         createdItems += 1
                         if limitObjects > 0:
@@ -236,35 +286,24 @@ class SonOfTheForestToBlender:
     def __blenderCreateObject(self, itemPos, itemRot, typeID, profileID, index, subindex):
         # Check if bpy Module is Loaded (if the Script run in Blender)
         if self.blenderLoaded:
-            # Create the Object. Flip Y with Z Axis for Blender, cause its rotatet in the Game
-            #bpy.ops.mesh.primitive_cube_add(location=(itemPos['x'], itemPos['y'], itemPos['z']))
-            if profileID == 1:
-                # Wood Log
-                self.__blenderWoodLog()
-            elif profileID == 2:
-                self.__blenderWoodLog(vertical=True)
-            elif profileID == 12:
-                self.__blenderStick()
-            elif profileID == 213:
-                self.__blenderStone()
-            elif profileID == 224:
-                self.__blenderStone()
+            # Get the Object with the profileID form the Dictionary
+            if profileID in self.gameObjects:
+                createData = self.gameObjects[profileID]
             else:
-                self.__blenderUndefined()
+                createData = self.gameObjects[0]
+            # Create the Blender Object
+            print("Create ID:", profileID)
+            print(createData)
+            self.__blenderCreator(createData)
+            # store current object in variable            
             curObject = bpy.context.object
             # Move Object to his final Position
-            bpy.ops.transform.translate(value=(itemPos['x'], itemPos['y'], itemPos['z']))
-            # switch to EDIT Mode
-            
+            bpy.ops.transform.translate(value=(itemPos['x'], itemPos['y'], itemPos['z']))            
             # apply new Size (length x,y,z)
-            bpy.context.object.scale = (1, 1, 1)
-            # apply Rotation. Flip also Y with Z
-            #curObject.rotation_euler[0] = itemRot['x']
-            #curObject.rotation_euler[1] = itemRot['z']
-            #curObject.rotation_euler[2] = itemRot['y']
+            #bpy.context.object.scale = (1, 1, 1)
+            # Rotate Object
             curObject.rotation_mode = 'QUATERNION'
             curObject.rotation_quaternion = (itemRot['w'], itemRot['x'], itemRot['y'], itemRot['z'])
-            # switch back to OBJECT Mode
             
             # remove Object of his Collection and put the Object into the new Collection
             for objCols in curObject.users_collection:
@@ -272,6 +311,7 @@ class SonOfTheForestToBlender:
             bpy.data.collections[saveGameID].objects.link(curObject)
             # rename Object
             bpy.context.object.name = "Obj-" + str(index) + "-" + str(subindex) + ".T" + str(typeID) + ".P" + str(profileID)
+    
     
     def __blenderNewMaterial(self, name):
         # Check if bpy Module is Loaded (if the Script run in Blender)
@@ -285,64 +325,26 @@ class SonOfTheForestToBlender:
     def __blenderCreateMaterials(self):
         # Check if bpy Module is Loaded (if the Script run in Blender)
         if self.blenderLoaded:
-            newMaterial = self.__blenderNewMaterial("WoodLog")
-            nodes = newMaterial.node_tree.nodes
-            nodes["Principled BSDF"].inputs[0].default_value = (0.0420278, 0.00887743, 0.00520561, 1)
-            newMaterial = self.__blenderNewMaterial("Stone")
-            nodes = newMaterial.node_tree.nodes
-            nodes["Principled BSDF"].inputs[0].default_value = (0.0420277, 0.0420277, 0.0420277, 1)
-            newMaterial = self.__blenderNewMaterial("Undefined")
-            nodes = newMaterial.node_tree.nodes
-            nodes["Principled BSDF"].inputs[0].default_value = (0.634298, 0.0546605, 0.650006, 1)
+            for materialName in self.gameMaterials:
+                newMaterial = self.__blenderNewMaterial(materialName)
+                nodes = newMaterial.node_tree.nodes
+                nodes["Principled BSDF"].inputs[0].default_value = self.gameMaterials[materialName]
     
 
-    def __blenderStick(self):
+    def __blenderCreator(self, data):
         # Check if bpy Module is Loaded (if the Script run in Blender)
         if self.blenderLoaded:
-            bpy.ops.mesh.primitive_cylinder_add()
-            bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.transform.resize(value=(0.1, 0.1, 0.6))
-            bpy.ops.transform.rotate(value=1.5708, orient_axis='X', orient_type='LOCAL')
-            bpy.ops.object.mode_set(mode='OBJECT')
-            bpy.context.object.data.materials.append(bpy.data.materials.get("WoodLog"))
-
-
-    def __blenderWoodLog(self, vertical=False):
-        # Check if bpy Module is Loaded (if the Script run in Blender)
-        if self.blenderLoaded:
-            if not vertical:
+            if data["type"] == "cube":
+                bpy.ops.mesh.primitive_cube_add()
+            elif data["type"] == "cylinder":
                 bpy.ops.mesh.primitive_cylinder_add()
-                bpy.ops.object.mode_set(mode='EDIT')
-                bpy.ops.transform.resize(value=(0.25, 0.25, 1.1))
-                bpy.ops.object.mode_set(mode='OBJECT')
-                bpy.context.object.data.materials.append(bpy.data.materials.get("WoodLog"))
-            else:
-                bpy.ops.mesh.primitive_cylinder_add()
-                bpy.ops.object.mode_set(mode='EDIT')
-                bpy.ops.transform.resize(value=(0.25, 0.25, 1.1))
-                bpy.ops.object.mode_set(mode='OBJECT')
-                bpy.context.object.data.materials.append(bpy.data.materials.get("WoodLog"))
-    
-
-    def __blenderStone(self):
-        # Check if bpy Module is Loaded (if the Script run in Blender)
-        if self.blenderLoaded:
-            bpy.ops.mesh.primitive_cube_add()
             bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.transform.resize(value=(0.2, 0.2, 0.2))
+            bpy.ops.transform.resize(value=data["transform"])
+            if "rotate" in data:
+                bpy.ops.transform.rotate(value=data["rotate"]["value"], orient_axis=data["rotate"]["axis"], orient_type=data["rotate"]["type"])
             bpy.ops.object.mode_set(mode='OBJECT')
-            bpy.context.object.data.materials.append(bpy.data.materials.get("Stone"))
-
-
-    def __blenderUndefined(self):
-        # Check if bpy Module is Loaded (if the Script run in Blender)
-        if self.blenderLoaded:
-            bpy.ops.mesh.primitive_cube_add()
-            bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.transform.resize(value=(0.125, 0.125, 0.125))
-            bpy.ops.object.mode_set(mode='OBJECT')
-            bpy.context.object.data.materials.append(bpy.data.materials.get("Undefined"))
-
+            bpy.context.object.data.materials.append(bpy.data.materials.get(data["material"]))
+                
     
     # Create Blender Collection with Name of SaveGameID
     def __blenderCreateCollection(self):
