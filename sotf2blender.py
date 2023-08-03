@@ -366,17 +366,84 @@ class SOFTGameReader:
     def __init__(self):
         self.mapLoaded = False
 
-    def getSaveGamePath(self, saveGameID, singlePlayer=False, customPath=None):
-        pass
-
-    def readSaveGame(self):
-        pass
+    def loadSaveGame(self, saveGameID, singlePlayer=False, customPath=None):
+        result = False
+        # Find the SaveGamePath
+        saveGamePath = self.__getSaveGamePath(saveGameID, singlePlayer, customPath)
+        if not saveGamePath == None:
+            # Read the JSON
+            mapData = self.__readSaveFile(saveGamePath)
+            if not mapData == None:
+                self.mapStructures = self.__getStructures(mapData)
+                self.mapLoaded = True
+                result = True
+        return result
+    
 
     def getConstructionCategories(self):
+        result = None
+        if self.mapLoaded:
+            result = []
+            for index in range(len(self.mapStructures)):
+                if not self.mapStructures[index] == None:
+                    if len(self.mapStructures[index]) > 0:
+                        result.append(index)
+        return result
+
+
+    def getConstructionCategoryByID(self, ID):
+        return self.mapStructures[ID]
+    
+    def extractStructureData(self, structureJSON):
         pass
 
-    def getConstructionCategoryByID(self):
-        pass
+
+    # ------------------------------------------------------------------------------
+    # Private Methods - Blender 3D specific
+
+
+    # Read and return the JSON File
+    def __readSaveFile(self, path):
+        result = None
+        pathConstructions = os.path.join(path, "ConstructionsSaveData.json")
+        print("Use JSON:", pathConstructions)
+        if (os.path.exists(pathConstructions)):
+            with open(pathConstructions, 'r') as f:
+                result = json.load(f)
+        return result
+    
+
+    # Extract and return Structures form the MapData
+    def __getStructures(self, mapData):
+        dictConstructions = json.loads(mapData["Data"]["Constructions"])
+        dictStructures = dictConstructions["Structures"]
+        return dictStructures
+    
+
+    # Find and return the SaveGame Directory
+    def __getSaveGamePath(self, saveGameID, singlePlayer=False, customPath=None):
+        result = None
+        playerMode = "Multiplayer"
+        if singlePlayer:
+            playerMode = "SinglePlayer"
+        if customPath == None:
+            # Look in the standard Game Directory in the Userprofile
+            softDir = os.path.join(os.environ['userprofile'], "AppData", "LocalLow", "Endnight", "SonsOfTheForest", "Saves")
+            if os.path.exists(softDir):
+                softDirContent =  os.listdir(softDir)
+                if (len(softDirContent) > 0):
+                    # Pick the first Directory. I guess there is usually only one Directory
+                    clientID = os.listdir(softDir)[0]
+                    saveGameDir = os.path.join(softDir, clientID, playerMode, saveGameID)
+                    if os.path.exists(saveGameDir):
+                        result = saveGameDir
+        else:
+            # Use a CustomPath for the GameFiles
+            if os.path.exists(customPath):
+                saveGameDir = os.path.join(customPath, saveGameID)
+                if os.path.exists(saveGameDir):
+                    result = saveGameDir
+        return result
 
 
 
@@ -405,17 +472,8 @@ class BlenderCreator:
 
 
 
-
-
-
-
-
-
-# ------------------------------------------------------------------------------
-# Main Program
-
-
-if __name__ == "__main__":
+# v1 - All in One
+def startMain():
     SOFT = SonOfTheForestToBlender()
     # Load the Map
     if SOFT.loadMap(SOFTSettings):
@@ -423,3 +481,30 @@ if __name__ == "__main__":
         # Create the Map if its loaded successful
         SOFT.createMap(limitObjects=200)
 
+
+# v2 - Splited Classes
+def startMain2():
+    SOFTReader = SOFTGameReader()
+    # Load the SaveGame
+    if SOFTReader.loadSaveGame(saveGameID, customPath=r"C:\DATA\GIT\soft2blender"):
+        # Get all Object Categories
+        catIDs = SOFTReader.getConstructionCategories()
+        # Iterate all Categories and Structures in Categories
+        for catID in catIDs:
+            for structure in SOFTReader.getConstructionCategoryByID(catID):
+                if len(structure["Elements"]) > 0:
+                    #print(catID, structure)
+                    TypeID = structure["TypeID"]
+                    position = structure["Position"]
+                    rotation = structure["Rotation"]
+                    elements = structure["Elements"]
+                    print(catID)
+                #print("==============\n", structure)
+
+
+# ------------------------------------------------------------------------------
+# Main Program
+
+
+if __name__ == "__main__":
+    startMain2()
