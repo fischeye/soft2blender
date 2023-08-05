@@ -1,0 +1,71 @@
+{
+    "ObjectMaterials": {
+        "WoodLog": [0.0420278, 0.00887743, 0.00520561, 1],
+        "Stone": [0.0420277, 0.0420277, 0.0420277, 1],
+        "Undefined": [0.634298, 0.0546605, 0.650006, 1],
+        "WoodPlank": [0.28101, 0.114233, 0.0219284, 1]
+    },
+    "ObjectDefinition": {
+        "0": {
+                "description": "Something undefined",
+                "type": "cube",
+                "transform": [0.125, 0.125, 0.125],
+                "material": "Undefined"
+            },
+        "1": {
+                "description": "Wood Log Horizontal",
+                "type": "cylinder",
+                "transform": [0.25, 0.25, 1.1],
+                "material": "WoodLog"
+            },
+        "2": {
+                "description": "Wood Log Vertical",
+                "type": "cylinder",
+                "transform": [0.25, 0.25, 1.1],
+                "material": "WoodLog"
+            },
+        "6": {
+                "description": "Wood Plank attached to Wood Log",
+                "type": "cube",
+                "transform": [0.25, 0.10, 1.1],
+                "material": "WoodPlank"
+            },
+        "12": {
+                "description": "Wood Stick in ground",
+                "type": "cylinder",
+                "transform": [0.1, 0.1, 0.6],
+                "rotate": { "value": 1.5708, "axis": "X", "type": "LOCAL" },
+                "material": "WoodLog"
+            },
+        "213": {
+                "description": "Stone on Ground",
+                "type": "cube",
+                "transform": [0.2, 0.2, 0.2],
+                "material": "Stone"
+            },
+        "224": {
+                "description": "Stone on Ground",
+                "type": "cube",
+                "transform": [0.2, 0.2, 0.2],
+                "material": "Stone"
+            },
+        "226": {
+                "description": "Stone on Ground",
+                "type": "cube",
+                "transform": [0.2, 0.2, 0.2],
+                "material": "Stone"
+            },
+        "228": {
+                "description": "Stone on Ground",
+                "type": "cube",
+                "transform": [0.2, 0.2, 0.2],
+                "material": "Stone"
+            },
+        "229": {
+                "description": "Stone on Ground",
+                "type": "cube",
+                "transform": [0.2, 0.2, 0.2],
+                "material": "Stone"
+            }
+        }
+}

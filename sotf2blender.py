@@ -21,6 +21,8 @@ except:
 #saveGameID = "1728018653"
 saveGameID = "0472284868"
 
+# This Path is were this Python Script, JSON, FBX Files are. <--- IMPORTANT to create the Map
+SOFTConverterSourcePath = r"G:\Daten\Projects\soft2blender"
 
 # ------------------------------------------------------------------------------
 # Blender Helper Class
@@ -145,6 +147,32 @@ class SOFTGameBlender:
             self.objectDefs = gameDefinitions["ObjectDefinition"]
             self.materialDefs = gameDefinitions["ObjectMaterials"]
     
+    def firstSteps(self):
+        if self.blenderLoaded:
+            # Select everything
+            bpy.ops.object.select_all(action='SELECT')
+            # Delete everything
+            bpy.ops.object.delete(use_global=False)
+    
+    def finalSteps(self):
+        if self.blenderLoaded:
+            # Select everything
+            bpy.ops.object.select_all(action='SELECT')
+            # Set Pivot Transform to CURSOR
+            bpy.context.scene.tool_settings.transform_pivot_point = 'CURSOR'
+            # Scale it down to become more handy
+            bpy.ops.transform.resize(value=(0.1, 0.1, 0.1))
+            # TODO: Pivot Point Scale does not work. 
+            bpy.ops.transform.translate(value=(305, 0, -725), orient_axis_ortho='X', orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', mirror=False, use_proportional_edit=False, proportional_edit_falloff='SMOOTH', proportional_size=1, use_proportional_connected=False, use_proportional_projected=False, snap=False, snap_elements={'INCREMENT'}, use_snap_project=False, snap_target='CLOSEST', use_snap_self=True, use_snap_edit=True, use_snap_nonedit=True, use_snap_selectable=False)
+            # Rotate everything
+            bpy.ops.transform.rotate(value=1.5708, orient_axis='X', orient_type='GLOBAL')
+            # Mirror
+            bpy.ops.transform.mirror(orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, False, True))
+
+    def importFBX(self, fbxpath):
+        if self.blenderLoaded:
+            bpy.ops.import_scene.fbx(filepath = fbxpath)
+    
     def createCollection(self):
         if self.blenderLoaded:
             print("Blender: Create Collection")
@@ -165,41 +193,43 @@ class SOFTGameBlender:
         if self.blenderLoaded:
             if str(profileID) in self.objectDefs:
                 thisDef = self.objectDefs[str(profileID)]
-                print("Blender: Create Object")
-                if thisDef["type"] == "cube":
-                    bpy.ops.mesh.primitive_cube_add()
-                elif thisDef["type"] == "cylinder":
-                    bpy.ops.mesh.primitive_cylinder_add()
-                
-                # rename Object
-                bpy.context.object.name = name
-                curObject = bpy.data.objects[name]
-
-                bpy.ops.object.mode_set(mode='EDIT')
-                bpy.ops.transform.resize(value=thisDef["transform"])
-                if "rotate" in thisDef:
-                    bpy.ops.transform.rotate(value=thisDef["rotate"]["value"], orient_axis=thisDef["rotate"]["axis"], orient_type=thisDef["rotate"]["type"])
-                bpy.ops.object.mode_set(mode='OBJECT')
-                # Get the Position and Rotation
-                bpy.ops.transform.translate(value=(position['x'], position['y'], position['z']))
-                bpy.context.object.rotation_mode = 'QUATERNION'
-                for rot in rotation:
-                    print(rot)
-                    if rot == "x":
-                        bpy.context.object.rotation_quaternion.x = rotation['x']
-                    if rot == "y":
-                        bpy.context.object.rotation_quaternion.y = rotation['y']
-                    if rot == "z":
-                        bpy.context.object.rotation_quaternion.z = rotation['z']
-                    if rot == "w":
-                        bpy.context.object.rotation_quaternion.w = rotation['w']
-                # Assign the Material
-                #bpy.context.object.data.materials.append(bpy.data.materials.get(thisDef["material"]))
-                curObject.data.materials.append(bpy.data.materials.get(thisDef["material"]))
-                # remove Object of his Collection and put the Object into the new Collection
-                for objCols in bpy.context.object.users_collection:
-                    objCols.objects.unlink(bpy.context.object)
-                bpy.data.collections[self.gameID].objects.link(curObject)
+            else:
+                # Undefined Object
+                thisDef = self.objectDefs["0"]
+            print("Blender: Create Object")
+            if thisDef["type"] == "cube":
+                bpy.ops.mesh.primitive_cube_add()
+            elif thisDef["type"] == "cylinder":
+                bpy.ops.mesh.primitive_cylinder_add()
+            
+            # Rename Object
+            bpy.context.object.name = name
+            curObject = bpy.data.objects[name]
+            # Transformations
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.transform.resize(value=thisDef["transform"])
+            if "rotate" in thisDef:
+                bpy.ops.transform.rotate(value=thisDef["rotate"]["value"], orient_axis=thisDef["rotate"]["axis"], orient_type=thisDef["rotate"]["type"])
+            bpy.ops.object.mode_set(mode='OBJECT')
+            # Get the Position and Rotation
+            bpy.ops.transform.translate(value=(position['x'], position['y'], position['z']))
+            bpy.context.object.rotation_mode = 'QUATERNION'
+            for rot in rotation:
+                print(rot)
+                if rot == "x":
+                    bpy.context.object.rotation_quaternion.x = rotation['x']
+                if rot == "y":
+                    bpy.context.object.rotation_quaternion.y = rotation['y']
+                if rot == "z":
+                    bpy.context.object.rotation_quaternion.z = rotation['z']
+                if rot == "w":
+                    bpy.context.object.rotation_quaternion.w = rotation['w']
+            # Assign the Material
+            curObject.data.materials.append(bpy.data.materials.get(thisDef["material"]))
+            # Remove Object of his Collection and put the Object into the new Collection
+            for objCols in bpy.context.object.users_collection:
+                objCols.objects.unlink(bpy.context.object)
+            bpy.data.collections[self.gameID].objects.link(curObject)
 
 
 
@@ -216,7 +246,8 @@ def startMain():
     gamePath = r"G:\Daten\Projects\soft2blender"
     
     # Load the SaveGame
-    if SOFTReader.loadSaveGame(saveGameID, customPath=gamePath):
+    #if SOFTReader.loadSaveGame(saveGameID, customPath=gamePath):
+    if SOFTReader.loadSaveGame(saveGameID, singlePlayer=True):
 
         # Get all Object Categories
         catIDs = SOFTReader.getConstructionCategories()
@@ -240,53 +271,17 @@ def startMain():
                         name = "Obj-" + str(catID) + "-" + str(structID) + "-" + str(elementID)
                         # Create Element in BLender
                         SOFTBlender.createObject(name, profileID, position, rotation)
+        
+        # Import SOFTMap
+        SOFTBlender.importFBX(os.path.join(SOFTConverterSourcePath, "softmap.fbx"))
+        # Final Steps
+        SOFTBlender.finalSteps()
 
 
 # ------------------------------------------------------------------------------
 # Main Program
 
-
-gameDefinitions = {
-    "ObjectMaterials": {
-        "WoodLog": [0.0420278, 0.00887743, 0.00520561, 1],
-        "Stone": [0.0420277, 0.0420277, 0.0420277, 1],
-        "Undefined": [0.634298, 0.0546605, 0.650006, 1]
-    },
-    "ObjectDefinition": {
-        "0": {
-                "type": "cube",
-                "transform": [0.125, 0.125, 0.125],
-                "material": "Undefinded"
-            },
-        "1": {
-                "type": "cylinder",
-                "transform": [0.25, 0.25, 1.1],
-                "material": "WoodLog"
-            },
-        "2": {
-                "type": "cylinder",
-                "transform": [0.25, 0.25, 1.1],
-                "material": "WoodLog"
-            },
-        "12": {
-                "type": "cylinder",
-                "transform": [0.1, 0.1, 0.6],
-                "rotate": { "value": 1.5708, "axis": "X", "type": "LOCAL" },
-                "material": "WoodLog"
-            },
-        "213": {
-                "type": "cube",
-                "transform": [0.2, 0.2, 0.2],
-                "material": "Stone"
-            },
-        "224": {
-                "type": "cube",
-                "transform": [0.2, 0.2, 0.2],
-                "material": "Stone"
-            }
-        }
-}
-
+gameDefinitions = json.load(open(os.path.join(SOFTConverterSourcePath, "softobjects.json"), 'r'))
 
 if __name__ == "__main__":
     startMain()
