@@ -31,6 +31,14 @@ class SOFTGameReader:
 
     def __init__(self):
         self.mapLoaded = False
+    
+
+    # save structures to JSON file if needed
+    def extractStructes2JSON(self, fileName):
+        if self.mapLoaded:
+            with open(fileName, 'w') as sf:
+                json.dump(self.mapStructures, sf)
+    
 
     def loadSaveGame(self, saveGameID, singlePlayer=False, customPath=None):
         result = False
@@ -136,9 +144,10 @@ class SOFTGameReader:
 
 class SOFTGameBlender:
 
-    def __init__(self, gameID, gameDefinitions):
+    def __init__(self, gameID, gameDefinitions, sourcePath):
         self.gameID = gameID
         self.blenderLoaded = False
+        self.sourcePath = sourcePath
         # check if this script run in Blender and module is loaded
         # script will run in plain python as well, without creating blender objects
         if "bpy" in sys.modules:
@@ -189,8 +198,9 @@ class SOFTGameBlender:
                 nodes = bpy.data.materials.get(materialName).node_tree.nodes
                 nodes["Principled BSDF"].inputs[0].default_value = self.materialDefs[materialName]
 
-    def createObject(self, name, profileID, position, rotation):
+    def createObject(self, name, profileID, position, rotation, lenghtScale):
         if self.blenderLoaded:
+            isFBX = False
             if str(profileID) in self.objectDefs:
                 thisDef = self.objectDefs[str(profileID)]
             else:
@@ -201,16 +211,33 @@ class SOFTGameBlender:
                 bpy.ops.mesh.primitive_cube_add()
             elif thisDef["type"] == "cylinder":
                 bpy.ops.mesh.primitive_cylinder_add()
-            
-            # Rename Object
-            bpy.context.object.name = name
-            curObject = bpy.data.objects[name]
-            # Transformations
-            bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.transform.resize(value=thisDef["transform"])
-            if "rotate" in thisDef:
-                bpy.ops.transform.rotate(value=thisDef["rotate"]["value"], orient_axis=thisDef["rotate"]["axis"], orient_type=thisDef["rotate"]["type"])
-            bpy.ops.object.mode_set(mode='OBJECT')
+            elif thisDef["type"] == "sphere":
+                bpy.ops.mesh.primitive_ico_sphere_add()
+            elif thisDef["type"] == "fbx":
+                isFBX = True
+                objectsBefore = set(bpy.context.scene.objects)
+                self.importFBX(os.path.join(self.sourcePath, thisDef["file"]))
+                objectsNew = set(bpy.context.scene.objects) - objectsBefore
+                bpy.ops.object.select_all(action='DESELECT')
+                for newObj in objectsNew:
+                    newObj.select_set(True)
+                return "PROBLEM HERE"
+                        
+            if not isFBX:
+                # Rename Object
+                bpy.context.object.name = name
+                curObject = bpy.data.objects[name]
+                # Transformations
+                bpy.ops.object.mode_set(mode='EDIT')
+                print(profileID)
+                print(thisDef["transform"])
+                bpy.ops.transform.resize(value=thisDef["transform"])
+                if "rotate" in thisDef:
+                    bpy.ops.transform.rotate(value=thisDef["rotate"]["value"], orient_axis=thisDef["rotate"]["axis"], orient_type=thisDef["rotate"]["type"])
+                # Bevel
+                if "bevel" in thisDef:
+                    bpy.ops.mesh.bevel(offset=thisDef["bevel"], offset_pct=0, affect='EDGES')
+                bpy.ops.object.mode_set(mode='OBJECT')
             # Get the Position and Rotation
             bpy.ops.transform.translate(value=(position['x'], position['y'], position['z']))
             bpy.context.object.rotation_mode = 'QUATERNION'
@@ -224,6 +251,9 @@ class SOFTGameBlender:
                     bpy.context.object.rotation_quaternion.z = rotation['z']
                 if rot == "w":
                     bpy.context.object.rotation_quaternion.w = rotation['w']
+            # LengthScale
+            if not lenghtScale == 1:
+                bpy.ops.transform.resize(value=(1, 1, lenghtScale), orient_type='LOCAL')
             # Assign the Material
             curObject.data.materials.append(bpy.data.materials.get(thisDef["material"]))
             # Remove Object of his Collection and put the Object into the new Collection
@@ -238,7 +268,7 @@ def startMain():
 
     # Initialize Classes
     SOFTReader = SOFTGameReader()
-    SOFTBlender = SOFTGameBlender(saveGameID, gameDefinitions)
+    SOFTBlender = SOFTGameBlender(saveGameID, gameDefinitions, SOFTConverterSourcePath)
 
     # FischEye's Path at Work
     gamePath = r"C:\DATA\GIT\soft2blender"
@@ -249,8 +279,12 @@ def startMain():
     #if SOFTReader.loadSaveGame(saveGameID, customPath=gamePath):
     if SOFTReader.loadSaveGame(saveGameID, singlePlayer=True):
 
+        if not SOFTBlender.blenderLoaded:
+            SOFTReader.extractStructes2JSON(os.path.join(gamePath, "structures.json"))
+
         # Get all Object Categories
         catIDs = SOFTReader.getConstructionCategories()
+        SOFTBlender.firstSteps()
         SOFTBlender.createCollection()
         SOFTBlender.createMaterials()
         
@@ -268,12 +302,15 @@ def startMain():
                     for elementID in range(len(elements)):
                         element = elements[elementID]
                         profileID, position, rotation, lenghtScale = SOFTReader.getElement(element)
-                        name = "Obj-" + str(catID) + "-" + str(structID) + "-" + str(elementID)
+                        name = "Obj-" + str(profileID) + "-" + str(catID) + "-" + str(structID) + "-" + str(elementID)
                         # Create Element in BLender
-                        SOFTBlender.createObject(name, profileID, position, rotation)
+                        SOFTBlender.createObject(name, profileID, position, rotation, lenghtScale)
         
         # Import SOFTMap
         SOFTBlender.importFBX(os.path.join(SOFTConverterSourcePath, "softmap.fbx"))
+        # Need to move the map, but cant select the Object :-(
+        #bpy.ops.transform.translate(value=(0, 0, 1.42108), orient_axis_ortho='X', orient_type='GLOBAL')
+
         # Final Steps
         SOFTBlender.finalSteps()
 

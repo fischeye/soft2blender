@@ -3,7 +3,8 @@
         "WoodLog": [0.0420278, 0.00887743, 0.00520561, 1],
         "Stone": [0.0420277, 0.0420277, 0.0420277, 1],
         "Undefined": [0.634298, 0.0546605, 0.650006, 1],
-        "WoodPlank": [0.28101, 0.114233, 0.0219284, 1]
+        "WoodPlank": [0.28101, 0.114233, 0.0219284, 1],
+        "StoneSmall": [0.334323, 0.313218, 0.304113, 1]
     },
     "ObjectDefinition": {
         "0": {
@@ -24,8 +25,15 @@
                 "transform": [0.25, 0.25, 1.1],
                 "material": "WoodLog"
             },
+        "5": {
+                "description": "Wood Plank on wall attached to Wood Log",
+                "type": "cube",
+                "transform": [0.25, 0.10, 1.1],
+                "rotate": { "value": 1.5708, "axis": "Z", "type": "LOCAL" },
+                "material": "WoodPlank"
+            },
         "6": {
-                "description": "Wood Plank attached to Wood Log",
+                "description": "Wood Plank flat on ground attached to Wood Log",
                 "type": "cube",
                 "transform": [0.25, 0.10, 1.1],
                 "material": "WoodPlank"
@@ -37,34 +45,95 @@
                 "rotate": { "value": 1.5708, "axis": "X", "type": "LOCAL" },
                 "material": "WoodLog"
             },
+        "31": {
+                "description": "Stick Fire",
+                "type": "fbx",
+                "file": "stickfire.fbx",
+                "transform": [0.5, 0.5, 0.5],
+                "rotate": { "value": 1.5708, "axis": "X", "type": "LOCAL" },
+                "material": "WoodLog"
+            },
+        "41": {
+                "description": "Wood Plank Half Vertical attached",
+                "type": "cylinder",
+                "transform": [0.25, 0.25, 0.6],
+                "material": "WoodLog"
+            },
+        "42": {
+                "description": "Wood Plank Quarter Vertical attached",
+                "type": "cylinder",
+                "transform": [0.25, 0.25, 0.25],
+                "material": "WoodLog"
+            },
+        "119": {
+                "description": "Stone Small",
+                "type": "sphere",
+                "transform": [0.1, 0.1, 0.1],
+                "material": "StoneSmall"
+            },
+        "120": {
+                "description": "Stone Small",
+                "type": "sphere",
+                "transform": [0.1, 0.1, 0.1],
+                "material": "StoneSmall"
+            },
+        "121": {
+                "description": "Stone Small",
+                "type": "sphere",
+                "transform": [0.1, 0.1, 0.1],
+                "material": "StoneSmall"
+            },
+        "122": {
+                "description": "Stone Small",
+                "type": "sphere",
+                "transform": [0.1, 0.1, 0.1],
+                "material": "StoneSmall"
+            },
+        "123": {
+                "description": "Stone Small",
+                "type": "sphere",
+                "transform": [0.1, 0.1, 0.1],
+                "material": "StoneSmall"
+            },
+        "124": {
+                "description": "Stone Small",
+                "type": "sphere",
+                "transform": [0.1, 0.1, 0.1],
+                "material": "StoneSmall"
+            },
         "213": {
                 "description": "Stone on Ground",
                 "type": "cube",
                 "transform": [0.2, 0.2, 0.2],
+                "bevel": 0.04,
                 "material": "Stone"
             },
         "224": {
                 "description": "Stone on Ground",
                 "type": "cube",
                 "transform": [0.2, 0.2, 0.2],
+                "bevel": 0.04,
                 "material": "Stone"
             },
         "226": {
                 "description": "Stone on Ground",
                 "type": "cube",
                 "transform": [0.2, 0.2, 0.2],
+                "bevel": 0.04,
                 "material": "Stone"
             },
         "228": {
                 "description": "Stone on Ground",
                 "type": "cube",
                 "transform": [0.2, 0.2, 0.2],
+                "bevel": 0.04,
                 "material": "Stone"
             },
         "229": {
                 "description": "Stone on Ground",
                 "type": "cube",
                 "transform": [0.2, 0.2, 0.2],
+                "bevel": 0.04,
                 "material": "Stone"
             }
         }
