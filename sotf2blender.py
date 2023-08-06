@@ -178,9 +178,20 @@ class SOFTGameBlender:
             # Mirror
             bpy.ops.transform.mirror(orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, False, True))
 
+
     def importFBX(self, fbxpath):
         if self.blenderLoaded:
+            result = None
+            objectsBefore = set(bpy.context.scene.objects)
             bpy.ops.import_scene.fbx(filepath = fbxpath)
+            objectsNew = set(bpy.context.scene.objects) - objectsBefore
+            bpy.ops.object.select_all(action='DESELECT')
+            for newObj in objectsNew:
+                newObj.select_set(True)
+                result = bpy.data.objects.get(newObj.name)
+                break
+            return result
+
     
     def createCollection(self):
         if self.blenderLoaded:
@@ -215,29 +226,28 @@ class SOFTGameBlender:
                 bpy.ops.mesh.primitive_ico_sphere_add()
             elif thisDef["type"] == "fbx":
                 isFBX = True
-                objectsBefore = set(bpy.context.scene.objects)
-                self.importFBX(os.path.join(self.sourcePath, thisDef["file"]))
-                objectsNew = set(bpy.context.scene.objects) - objectsBefore
-                bpy.ops.object.select_all(action='DESELECT')
-                for newObj in objectsNew:
-                    newObj.select_set(True)
-                return "PROBLEM HERE"
-                        
+                newObject = self.importFBX(os.path.join(self.sourcePath, thisDef["file"]))
+                #return "PROBLEM HERE"
+            
             if not isFBX:
                 # Rename Object
                 bpy.context.object.name = name
                 curObject = bpy.data.objects[name]
-                # Transformations
-                bpy.ops.object.mode_set(mode='EDIT')
-                print(profileID)
-                print(thisDef["transform"])
-                bpy.ops.transform.resize(value=thisDef["transform"])
-                if "rotate" in thisDef:
-                    bpy.ops.transform.rotate(value=thisDef["rotate"]["value"], orient_axis=thisDef["rotate"]["axis"], orient_type=thisDef["rotate"]["type"])
-                # Bevel
-                if "bevel" in thisDef:
-                    bpy.ops.mesh.bevel(offset=thisDef["bevel"], offset_pct=0, affect='EDGES')
-                bpy.ops.object.mode_set(mode='OBJECT')
+            else:
+                newObject.name = name
+                curObject = newObject
+            
+            # Transformations
+            bpy.ops.object.mode_set(mode='EDIT')
+            print(profileID)
+            print(thisDef["transform"])
+            bpy.ops.transform.resize(value=thisDef["transform"])
+            if "rotate" in thisDef:
+                bpy.ops.transform.rotate(value=thisDef["rotate"]["value"], orient_axis=thisDef["rotate"]["axis"], orient_type=thisDef["rotate"]["type"])
+            # Bevel
+            if "bevel" in thisDef:
+                bpy.ops.mesh.bevel(offset=thisDef["bevel"], offset_pct=0, affect='EDGES')
+            bpy.ops.object.mode_set(mode='OBJECT')
             # Get the Position and Rotation
             bpy.ops.transform.translate(value=(position['x'], position['y'], position['z']))
             bpy.context.object.rotation_mode = 'QUATERNION'
