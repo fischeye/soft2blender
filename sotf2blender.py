@@ -22,7 +22,8 @@ except:
 saveGameID = "0472284868"
 
 # This Path is were this Python Script, JSON, FBX Files are. <--- IMPORTANT to create the Map
-SOFTConverterSourcePath = r"G:\Daten\Projects\soft2blender"
+SOFTConverterSourcePath = r"C:\DATA\GIT\soft2blender"
+#SOFTConverterSourcePath = r"G:\Daten\Projects\soft2blender"
 
 # ------------------------------------------------------------------------------
 # Blender Helper Class
@@ -187,9 +188,10 @@ class SOFTGameBlender:
             objectsNew = set(bpy.context.scene.objects) - objectsBefore
             bpy.ops.object.select_all(action='DESELECT')
             for newObj in objectsNew:
-                newObj.select_set(True)
                 result = bpy.data.objects.get(newObj.name)
                 break
+            # Set the active Object in view Layer
+            bpy.context.view_layer.objects.active = result
             return result
 
     
@@ -249,18 +251,24 @@ class SOFTGameBlender:
                 bpy.ops.mesh.bevel(offset=thisDef["bevel"], offset_pct=0, affect='EDGES')
             bpy.ops.object.mode_set(mode='OBJECT')
             # Get the Position and Rotation
-            bpy.ops.transform.translate(value=(position['x'], position['y'], position['z']))
-            bpy.context.object.rotation_mode = 'QUATERNION'
+            #bpy.ops.transform.translate(value=(position['x'], position['y'], position['z']))
+            curObject.location = (position['x'], position['y'], position['z'])
+            #bpy.context.object.rotation_mode = 'QUATERNION'
+            curObject.rotation_mode = 'QUATERNION'
             for rot in rotation:
                 print(rot)
                 if rot == "x":
-                    bpy.context.object.rotation_quaternion.x = rotation['x']
+                    #bpy.context.object.rotation_quaternion.x = rotation['x']
+                    curObject.rotation_quaternion.x = rotation['x']
                 if rot == "y":
-                    bpy.context.object.rotation_quaternion.y = rotation['y']
+                    #bpy.context.object.rotation_quaternion.y = rotation['y']
+                    curObject.rotation_quaternion.y = rotation['y']
                 if rot == "z":
-                    bpy.context.object.rotation_quaternion.z = rotation['z']
+                    #bpy.context.object.rotation_quaternion.z = rotation['z']
+                    curObject.rotation_quaternion.z = rotation['z']
                 if rot == "w":
-                    bpy.context.object.rotation_quaternion.w = rotation['w']
+                    #bpy.context.object.rotation_quaternion.w = rotation['w']
+                    curObject.rotation_quaternion.w = rotation['w']
             # LengthScale
             if not lenghtScale == 1:
                 bpy.ops.transform.resize(value=(1, 1, lenghtScale), orient_type='LOCAL')
@@ -283,11 +291,11 @@ def startMain():
     # FischEye's Path at Work
     gamePath = r"C:\DATA\GIT\soft2blender"
     # FischEye's Path at Home
-    gamePath = r"G:\Daten\Projects\soft2blender"
+    #gamePath = r"G:\Daten\Projects\soft2blender"
     
     # Load the SaveGame
     #if SOFTReader.loadSaveGame(saveGameID, customPath=gamePath):
-    if SOFTReader.loadSaveGame(saveGameID, singlePlayer=True):
+    if SOFTReader.loadSaveGame(saveGameID, singlePlayer=True, customPath=gamePath):
 
         if not SOFTBlender.blenderLoaded:
             SOFTReader.extractStructes2JSON(os.path.join(gamePath, "structures.json"))
@@ -317,9 +325,10 @@ def startMain():
                         SOFTBlender.createObject(name, profileID, position, rotation, lenghtScale)
         
         # Import SOFTMap
-        SOFTBlender.importFBX(os.path.join(SOFTConverterSourcePath, "softmap.fbx"))
+        mapObj = SOFTBlender.importFBX(os.path.join(SOFTConverterSourcePath, "softmap2.fbx"))
         # Need to move the map, but cant select the Object :-(
         #bpy.ops.transform.translate(value=(0, 0, 1.42108), orient_axis_ortho='X', orient_type='GLOBAL')
+        mapObj.location.y = mapObj.location.y + 14.2
 
         # Final Steps
         SOFTBlender.finalSteps()
