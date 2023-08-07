@@ -1,1 +1,1 @@
-{"Version":"0.0.0","Data":{"Fires":"{\"Version\":\"0.0.0\",\"FiresPerStructureType\":{}}"}}
+{"Version":"0.0.0","Data":{"Fires":"{\"Version\":\"0.0.0\",\"FiresPerStructureType\":{\"32\":[{\"PutOutChance\":2,\"Fuel\":300.0,\"FuelDrainRate\":1.0},{\"PutOutChance\":2,\"Fuel\":300.0,\"FuelDrainRate\":0.25}]}}"}}
